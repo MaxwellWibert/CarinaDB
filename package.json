@@ -1,0 +1,24 @@
+{
+  "name": "CarinaDB",
+  "version": "1.0.0",
+  "description": "App will pull data on Earth satellites and space junk from online resource in document form, parse with regex into orbital element components, and load components into a SQL database",
+  "main": "elsetParse.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MaxwellWibert/CarinaDB.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/MaxwellWibert/CarinaDB/issues"
+  },
+  "homepage": "https://github.com/MaxwellWibert/CarinaDB#readme",
+  "dependencies": {
+    "inquirer": "^3.0.6",
+    "moment": "^2.18.1"
+  }
+}
