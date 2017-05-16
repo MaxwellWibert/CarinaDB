@@ -10,7 +10,7 @@ var match;
 var satsAndJunk = [];
 const pi = Math.PI;
 
-var parser = function(filePath){
+var parser = function(filePath, callback){
 	fs.readFile(filePath, 'utf8', (err, data) =>{
 	if(err) throw err;
 	while((match = elsetExp.exec(data))!== null){
@@ -22,9 +22,10 @@ var parser = function(filePath){
 			match[18]));
 	}
 	console.log("Document parsing complete. " + satsAndJunk.length + " matches found");
-	return satsAndJunk;
+	
+	callback(satsAndJunk);
+	});
 }
-
 //constructor processes all relevant parsed stringified data from a single elSet into easily accessible qualitative and quantitative data
 function Satellite(noradNum, classifier, 
 	launchYear, launchNum, launchPiece, 
@@ -49,10 +50,13 @@ function Satellite(noradNum, classifier,
 	this.motionSeries = [rotesToRadians(parseFloat(meanMotion.trim())), rotesToRadians(parseFloat(halfMMPrime.trim())), rotesToRadians(parsePowerNotation(sixthMMDoublePrime))];
 	this.eccentricity = eccentricityConverter(eccentricity);
 	this.epoch = epochConverter(epochYear, epochDay, epochFractionalDay);
+	console.log("epoch time stamp: " + this.epoch.valueOf())
 	let that = this;
 	this.display = function(){
 		console.log(JSON.stringify(that, null, 3));
 	}
+
+	console.log("constructor successful for satellite " +  this.noradNum);
 }
 
 //takes in strings for BSTAR drag coefficient or second derivative of mean motion (over 6), outputs a sensible decimal. See match array terms [9] and [10] for string format details
