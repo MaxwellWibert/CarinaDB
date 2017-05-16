@@ -3,17 +3,16 @@ var moment = require("moment")
 //regular expression finds matches for "two line element set" (aka "elSet", a standard format of storing data on satellites and orbital debris, or space junk)
 //then parses this data using parenthetical match groups, which are accessible from the return of regexp.prototype.exec()
 //see bottom of page for documentation on the order and meaning of the match groups described in the regexp
-var elsetExp= /1 ([\d ]{5})([US]) *(\d{2})(\d{3})([A-Za-z ]{0,3}) *(\d{2})(\d{3}\.[\d ]{8}) *([\+\- ]\.[\d ]{8}) ?([\+\- ][\d ]{5}[\+\-]?[\d ]) ([\+\- ][\d ]{5}[\+\-]?[\d ]) \d [\d ]{5} *\r?\n? *2 [\d ]{5} ([\d ]{3}\.[\d ]{4}) ([\d ]{3}\.[\d ]{4}) ([\d ]{7}) ([\d ]{3}\.[\d ]{4}) ([\d ]{3}\.[\d ]{4}) ([\d ]{2}\.[\d ]{8})([\d ]{5})/g;
+var elsetExp= /1 ([\d ]{5})([US]) *(\d{2})(\d{3})([A-Za-z ]{0,3}) *(\d{2})(\d{3})(\.[\d ]{8}) *([\+\- ]\.[\d ]{8}) ?([\+\- ][\d ]{5}[\+\-]?[\d ]) ([\+\- ][\d ]{5}[\+\-]?[\d ]) \d [\d ]{5} *\r?\n? *2 [\d ]{5} ([\d ]{3}\.[\d ]{4}) ([\d ]{3}\.[\d ]{4}) ([\d ]{7}) ([\d ]{3}\.[\d ]{4}) ([\d ]{3}\.[\d ]{4}) ([\d ]{2}\.[\d ]{8})([\d ]{5})/g;
 //global variable stores match groups for one elSet while parsed data is processed into more accessible forms
 var match;
 //array will be populated by one satellite or one piece of space junk for every elset in the input document.
 var satsAndJunk = [];
 const pi = Math.PI;
 
-
-function parser(filePath){
+var parser = function(filePath){
 	fs.readFile(filePath, 'utf8', (err, data) =>{
-	if (err) console.log(err);
+	if(err) throw err;
 	while((match = elsetExp.exec(data))!== null){
 		satsAndJunk.push(new Satellite(match[1], match[2],
 			match[3], match[4], match[5],
@@ -22,13 +21,8 @@ function parser(filePath){
 			match[12], match[13], match[14], match[15], match[16], match[17],
 			match[18]));
 	}
-
-	console.log("+++++++++++++++++++++++++");
-	console.log("Number of matches: " + satsAndJunk.length);
-	console.log("+++++++++++++++++++++++++");
-
-	console.log(JSON.stringify(satsAndJunk, null, 3));
-	});
+	console.log("Document parsing complete. " + satsAndJunk.length + " matches found");
+	return satsAndJunk;
 }
 
 //constructor processes all relevant parsed stringified data from a single elSet into easily accessible qualitative and quantitative data
@@ -55,6 +49,10 @@ function Satellite(noradNum, classifier,
 	this.motionSeries = [rotesToRadians(parseFloat(meanMotion.trim())), rotesToRadians(parseFloat(halfMMPrime.trim())), rotesToRadians(parsePowerNotation(sixthMMDoublePrime))];
 	this.eccentricity = eccentricityConverter(eccentricity);
 	this.epoch = epochConverter(epochYear, epochDay, epochFractionalDay);
+	let that = this;
+	this.display = function(){
+		console.log(JSON.stringify(that, null, 3));
+	}
 }
 
 //takes in strings for BSTAR drag coefficient or second derivative of mean motion (over 6), outputs a sensible decimal. See match array terms [9] and [10] for string format details
@@ -71,7 +69,6 @@ function parsePowerNotation(wonkyString){
 	}
 	let sigString = string.slice(0, sliceIndex);
 	let powString = string.slice(sliceIndex);
-
 	let sigArray = sigString.split("");
 	//must add "0." before all digits, but after + or -, if either symbol is present before the digits
 	if(sigArray[0] === "+" || sigArray[0] === "-"){
@@ -81,11 +78,9 @@ function parsePowerNotation(wonkyString){
 	}
 	let significand = parseFloat(sigArray.join(""));
 	let power = parseInt(powString);
-
 	let decimal = significand * Math.pow(10, power);
 	return decimal;
 }
-
 
 //standard trig conversion functions come in handy
 function degreesToRadians(degrees){
@@ -109,6 +104,7 @@ function eccentricityConverter(string){
 	eccentricity = parseFloat(eccentricityString);
 	return eccentricity;
 }
+
 //takes string forms of year, day, and fractional day, returns Moment object
 function epochConverter(epochYear, epochDay, epochFractionalDay){
 	let fractional = parseFloat(epochFractionalDay);
@@ -123,7 +119,7 @@ function epochConverter(epochYear, epochDay, epochFractionalDay){
 	fractional = fractionalSeconds - seconds;
 	let fractionalMilliseconds = fractional*1000;
 	let milliseconds = Math.floor(fractionalMilliseconds);
-	epoch = moment(epochYear + epochDay + hours.toString() + minutes.toString() + seconds.toString() + milliseconds.toString(),"YYYYDDDHmsS");
+	epoch = new moment(epochYear + "-" + epochDay + "-" + hours + "-" + minutes + "-" + seconds + "-" + milliseconds,"YYYY-DDD-H-m-s-S");
 	return epoch;
 }
 
@@ -139,8 +135,6 @@ function yearConverter(twoDigitString){
 
 	return fourDigitString;
 }
-
-parser("./testElSet.txt");
 
 //match array terms:
 //[1]-NORAD number, used as a unique ID for individual satellite or piece of space junk, 
@@ -161,3 +155,6 @@ parser("./testElSet.txt");
 //[16]-Mean Anomaly in degrees--basically think of it as what percentage of the current orbit is complete, only instead of 0-100, measured from 0-360 degrees.
 //[17]-Mean Motion in revolutions per day-- literally the number of orbits completed in a day
 //[18]-Revolution number at epoch--literally the number of full orbits complete since launch the epoch time described by [6] and [7]
+
+
+module.exports = parser;

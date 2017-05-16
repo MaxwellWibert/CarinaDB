@@ -19,6 +19,7 @@
   "homepage": "https://github.com/MaxwellWibert/CarinaDB#readme",
   "dependencies": {
     "inquirer": "^3.0.6",
-    "moment": "^2.18.1"
+    "moment": "^2.18.1",
+    "mysql": "^2.13.0"
   }
 }
