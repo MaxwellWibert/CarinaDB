@@ -2,12 +2,14 @@
 var parser = require("./elsetParse.js");
 var mysql = require("mysql");
 var inquirer = require("inquirer");
+var table;
 var connection;
 var data;
 
 connectToDB();
 
 function connectToDB(){
+
 	connection = mysql.createConnection({
 	  	host: "localhost",
 	 	port: 3306,
@@ -25,13 +27,14 @@ function connectToDB(){
 			flowControl();
 		}
 	});
+	
 }
 
 function flowControl(){
 	inquirer.prompt({
 		type: "list",
 		message: "Choose a command: ",
-		choices: ["Import File into Database", "Change Database Structure", "Retrieve Data"],
+		choices: ["Import File into Database", "Change Database Structure", "Retrieve Data", "Quit"],
 		name: "flow"
 	}).then(response => {
 		switch(response.flow){
@@ -49,6 +52,10 @@ function flowControl(){
 			{
 				retrieve();
 			}
+			case "Quit":
+			{
+				quitScript();
+			}
 		}
 	});
 }
@@ -61,19 +68,56 @@ function importFile(){
 		default: "./testElSet.txt"
 	}).then(response =>{
 		parser(response.path, dumpData);
-		console.log("Import complete: " + data.length + " rows inserted");
 		flowControl();
 	});
 }
 
 function alter(){
-
+	inquirer.prompt({
+		type: "list",
+		message: "What would you like to add to the table?",
+		choices: ["Delta V Budget", "Perigee and Apogee radii", "Lattitude and Longitude", "Altitude"],
+		name: "attribute"
+	}).then(response => {
+		switch(response.attribute){
+			case "Delta V Budget":{
+				connection.query("ALTER TABLE constellation ADD deltaV DECIMAL(13,11)", err =>{
+					if(err) console.log("Delta V Budget already exists on the table");
+				});
+			}
+			break;
+			case "Perigee and Apogee radii":{
+				connection.query("ALTER TABLE constellation ADD periR DECIMAL(18,11)", err =>{
+					if(err) console.log("Perigee radius already exists on the table");
+				});
+				connection.query("ALTER TABLE constellation ADD apoR DECIMAL(18,11)", err =>{
+					if(err) console.log("Apogee radius already exists on the table");
+				});
+			} 
+			break;
+			case "Lattitude and Longitude":{
+				connection.query("ALTER TABLE constellation ADD lat DECIMAL(18,11)", err =>{
+					if(err) console.log("Lattitude already exists on the table");
+				});
+				connection.query("ALTER TABLE constellation ADD longitude DECIMAL(18,11)", err =>{
+					if(err) console.log("Longitude already exists on the table");
+				});
+			}
+			break;
+			case "Altitude":{
+				connection.query("ALTER TABLE constellation ADD altitude DECIMAL(18,11)", err =>{
+					if(err) console.log("Altitude already exists on the table");
+				});
+			}
+		}
+		flowControl();
+	});
 }
 
 function retrieve(){
-	connection.QUERY("SELECT * FROM constellation", (error, results, fields)=>{
+	connection.query("SELECT * FROM constellation", (error, results, fields)=>{
 		if(error) throw error;
-		console.log(fields);
+		console.log(results);
 		flowControl();
 	});
 }
@@ -88,10 +132,18 @@ var dumpData = function(load){
 			bStar: Satellite.BSTAR, 
 			inclination: Satellite.inclination, rightAscencion: Satellite.RAAN, argPerigee: Satellite.argPerigee,
 			meanAnomaly: Satellite.meanAnomaly, meanMotion: Satellite.motionSeries[0], halfMeanMotionPrime: Satellite.motionSeries[1], sixthMeanMotionDoublePrime: Satellite.motionSeries[2],
-			unixEpoch: Satellite.epoch.valueOf()
+			unixEpoch: parseInt(Satellite.epoch.valueOf())
 		},
 		(error) =>{
-			if(error) throw error;
+			if(error) console.log("NORAD data collision at " + Satellite.noradNum);
 		});
+	});
+}
+
+function quitScript(){
+	console.log("Connection Ending...");
+	connection.end(err =>{
+		if(err) throw err;
+		console.log("Scripts Terminated");
 	});
 }

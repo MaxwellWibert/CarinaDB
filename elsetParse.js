@@ -50,7 +50,6 @@ function Satellite(noradNum, classifier,
 	this.motionSeries = [rotesToRadians(parseFloat(meanMotion.trim())), rotesToRadians(parseFloat(halfMMPrime.trim())), rotesToRadians(parsePowerNotation(sixthMMDoublePrime))];
 	this.eccentricity = eccentricityConverter(eccentricity);
 	this.epoch = epochConverter(epochYear, epochDay, epochFractionalDay);
-	console.log("epoch time stamp: " + this.epoch.valueOf())
 	let that = this;
 	this.display = function(){
 		console.log(JSON.stringify(that, null, 3));
