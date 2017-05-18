@@ -27,7 +27,7 @@ function connectToDB(){
 			flowControl();
 		}
 	});
-	
+
 }
 
 function flowControl(){
@@ -52,6 +52,7 @@ function flowControl(){
 			{
 				retrieve();
 			}
+			break;
 			case "Quit":
 			{
 				quitScript();
@@ -115,10 +116,33 @@ function alter(){
 }
 
 function retrieve(){
-	connection.query("SELECT * FROM constellation", (error, results, fields)=>{
-		if(error) throw error;
-		console.log(results);
-		flowControl();
+	inquirer.prompt([
+		{
+			type: "input",
+			message: "What parameter would you like to search with?",
+			name: "param",
+			default: "inclination"
+		},
+		{
+			type: "input",
+			message: "Enter the lower limit of this search parameter",
+			name: "lower",
+			default: "0"
+		},
+		{
+			type: "input",
+			message: "Enter the upper limit of this search parameter",
+			name: "upper",
+			default: "1"
+		}
+	]).then(response => {
+		connection.query("SELECT * FROM constellation WHERE ?? >= ? AND ?? <= ?", 
+			[response.param, response.lower, response.param, response.upper],
+			(error, results, fields)=>{
+			if(error) throw error;
+			console.log(results);
+			flowControl();
+		});
 	});
 }
 

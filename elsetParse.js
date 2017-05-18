@@ -135,7 +135,6 @@ function yearConverter(twoDigitString){
 	}else{
 		fourDigitString = "19" + twoDigitString;
 	}
-
 	return fourDigitString;
 }
 

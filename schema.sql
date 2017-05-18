@@ -15,6 +15,6 @@ CREATE TABLE constellation(
     meanMotion DECIMAL(13, 10) not null,
     halfMeanMotionPrime DECIMAL(11, 10),
     sixthMeanMotionDoublePrime DECIMAL (11, 10),
-    unixEpoch BIGINT,
+    unixEpoch BIGINT not null,
     primary key (noradNum)
 );
