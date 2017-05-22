@@ -9,25 +9,31 @@ var data;
 connectToDB();
 
 function connectToDB(){
-
-	connection = mysql.createConnection({
-	  	host: "localhost",
-	 	port: 3306,
-		// Your username
-		user: "root",
-		// Your password
-		password: "Sdfjkl3ed",
-		database: "carinaDB"
-	});
-
-	connection.connect((err) => {
-		if(err) throw err
-		else{
-			console.log("Connected to database");
-			flowControl();
+	inquirer.prompt(
+		{
+			type: "password",
+			message: "Enter your database password",
+			name: "password"
 		}
-	});
+	).then(response =>{
+		connection = mysql.createConnection({
+		  	host: "localhost",
+		 	port: 3306,
+			// Your username
+			user: "root",
+			// Your password
+			password: response.password,
+			database: "carinaDB"
+		});
 
+		connection.connect((err) => {
+			if(err) throw err
+			else{
+				console.log("Connected to database");
+				flowControl();
+			}
+		});
+	});
 }
 
 function flowControl(){
@@ -83,35 +89,39 @@ function alter(){
 		switch(response.attribute){
 			case "Delta V Budget":{
 				connection.query("ALTER TABLE constellation ADD deltaV DECIMAL(13,11)", err =>{
-					if(err) console.log("Delta V Budget already exists on the table");
+					if(err) console.error("Delta V Budget already exists on the table");
+					flowControl();
 				});
 			}
 			break;
 			case "Perigee and Apogee radii":{
 				connection.query("ALTER TABLE constellation ADD periR DECIMAL(18,11)", err =>{
-					if(err) console.log("Perigee radius already exists on the table");
+					if(err) console.error("Perigee radius already exists on the table");
 				});
 				connection.query("ALTER TABLE constellation ADD apoR DECIMAL(18,11)", err =>{
-					if(err) console.log("Apogee radius already exists on the table");
+					if(err) console.error("Apogee radius already exists on the table");
+					flowControl();
 				});
 			} 
 			break;
 			case "Lattitude and Longitude":{
 				connection.query("ALTER TABLE constellation ADD lat DECIMAL(18,11)", err =>{
-					if(err) console.log("Lattitude already exists on the table");
+					if(err) console.error("Lattitude already exists on the table");
 				});
 				connection.query("ALTER TABLE constellation ADD longitude DECIMAL(18,11)", err =>{
-					if(err) console.log("Longitude already exists on the table");
+					if(err) console.error("Longitude already exists on the table");
+					flowControl();
 				});
 			}
 			break;
 			case "Altitude":{
 				connection.query("ALTER TABLE constellation ADD altitude DECIMAL(18,11)", err =>{
-					if(err) console.log("Altitude already exists on the table");
+					if(err) console.error("Altitude already exists on the table");
+					flowControl();
 				});
 			}
 		}
-		flowControl();
+		
 	});
 }
 

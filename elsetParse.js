@@ -1,5 +1,6 @@
 var fs = require("fs");
-var moment = require("moment")
+var Satellite = require("./Satellite.js");
+
 //regular expression finds matches for "two line element set" (aka "elSet", a standard format of storing data on satellites and orbital debris, or space junk)
 //then parses this data using parenthetical match groups, which are accessible from the return of regexp.prototype.exec()
 //see bottom of page for documentation on the order and meaning of the match groups described in the regexp
@@ -7,136 +8,26 @@ var elsetExp= /1 ([\d ]{5})([US]) *(\d{2})(\d{3})([A-Za-z ]{0,3}) *(\d{2})(\d{3}
 //global variable stores match groups for one elSet while parsed data is processed into more accessible forms
 var match;
 //array will be populated by one satellite or one piece of space junk for every elset in the input document.
-var satsAndJunk = [];
-const pi = Math.PI;
+var satellites = [];
 
 var parser = function(filePath, callback){
 	fs.readFile(filePath, 'utf8', (err, data) =>{
 	if(err) throw err;
 	while((match = elsetExp.exec(data))!== null){
-		satsAndJunk.push(new Satellite(match[1], match[2],
+		satellites.push(new Satellite(match[1], match[2],
 			match[3], match[4], match[5],
 			match[6], match[7], match[8],
 			match[9], match[10], match[11],
 			match[12], match[13], match[14], match[15], match[16], match[17],
 			match[18]));
 	}
-	console.log("Document parsing complete. " + satsAndJunk.length + " matches found");
+	console.log("Document parsing complete. " + satellites.length + " matches found");
 	
-	callback(satsAndJunk);
+	callback(satellites);
 	});
 }
-//constructor processes all relevant parsed stringified data from a single elSet into easily accessible qualitative and quantitative data
-function Satellite(noradNum, classifier, 
-	launchYear, launchNum, launchPiece, 
-	epochYear, epochDay, epochFractionalDay, 
-	halfMMPrime, sixthMMDoublePrime, BSTAR, 
-	inclination, RAAN, eccentricity, argPerigee, meanAnomaly, meanMotion,
-	revNum){
-	//classifier info
-	this.noradNum = parseInt(noradNum.trim());
-	this.classifier = classifier.trim();
-	//launch info
-	this.launchYear = parseInt(yearConverter(launchYear.trim()));
-	this.launchNum = parseInt(launchNum.trim());
-	this.launchPiece = launchPiece.trim();
-	this.BSTAR = parsePowerNotation(BSTAR);
-	//angles converted from degrees to radians, which are much easier for calculations later on, when it is time to graphically display data
-	this.inclination = degreesToRadians(parseFloat(inclination.trim()));
-	this.RAAN = degreesToRadians(parseFloat(RAAN.trim()));
-	this.argPerigee = degreesToRadians(parseFloat(argPerigee.trim()));
-	this.meanAnomaly = degreesToRadians(parseFloat(meanAnomaly.trim()));
-	//these angles are in rotations, so they require a different conversion factor to radians
-	this.motionSeries = [rotesToRadians(parseFloat(meanMotion.trim())), rotesToRadians(parseFloat(halfMMPrime.trim())), rotesToRadians(parsePowerNotation(sixthMMDoublePrime))];
-	this.eccentricity = eccentricityConverter(eccentricity);
-	this.epoch = epochConverter(epochYear, epochDay, epochFractionalDay);
-	let that = this;
-	this.display = function(){
-		console.log(JSON.stringify(that, null, 3));
-	}
 
-	console.log("constructor successful for satellite " +  this.noradNum);
-}
-
-//takes in strings for BSTAR drag coefficient or second derivative of mean motion (over 6), outputs a sensible decimal. See match array terms [9] and [10] for string format details
-//[\+\- ][\d ]{5}[\+\-]?[\d ] associated match group with format
-//+30197-6 example input
-function parsePowerNotation(wonkyString){
-	let string = wonkyString.trim();
-	let sliceIndex;
-	//if there is a plus or minus before the power be sure to include it into the power string
-	if(string.lastIndexOf("+")>0 || string.lastIndexOf("-")>0){
-		sliceIndex = -2;
-	}else{
-		sliceIndex = -1;
-	}
-	let sigString = string.slice(0, sliceIndex);
-	let powString = string.slice(sliceIndex);
-	let sigArray = sigString.split("");
-	//must add "0." before all digits, but after + or -, if either symbol is present before the digits
-	if(sigArray[0] === "+" || sigArray[0] === "-"){
-		sigArray.splice(1,0, "0", ".");
-	}else{
-		sigArray.splice(0,0, "0", ".");
-	}
-	let significand = parseFloat(sigArray.join(""));
-	let power = parseInt(powString);
-	let decimal = significand * Math.pow(10, power);
-	return decimal;
-}
-
-//standard trig conversion functions come in handy
-function degreesToRadians(degrees){
-	return degrees*pi/180;
-}
-
-function radiansToDegrees(radians){
-	return radians*180/pi;
-}
-
-function rotesToRadians(rotations){
-	return rotations*2*pi;
-}
-
-function radiansToRotes(radians){
-	return radians/(2*pi);
-}
-
-function eccentricityConverter(string){
-	eccentricityString = "0." + string;
-	eccentricity = parseFloat(eccentricityString);
-	return eccentricity;
-}
-
-//takes string forms of year, day, and fractional day, returns Moment object
-function epochConverter(epochYear, epochDay, epochFractionalDay){
-	let fractional = parseFloat(epochFractionalDay);
-	let fractionalHours = fractional*24;
-	let hours = Math.floor(fractionalHours);
-	fractional = fractionalHours - hours;
-	let fractionalMinutes = fractional * 60;
-	let minutes = Math.floor(fractionalMinutes);
-	fractional = fractionalMinutes - minutes;
-	let fractionalSeconds = fractional*60;
-	let seconds = Math.floor(fractionalSeconds);
-	fractional = fractionalSeconds - seconds;
-	let fractionalMilliseconds = fractional*1000;
-	let milliseconds = Math.floor(fractionalMilliseconds);
-	epoch = new moment(epochYear + "-" + epochDay + "-" + hours + "-" + minutes + "-" + seconds + "-" + milliseconds,"YYYY-DDD-H-m-s-S");
-	return epoch;
-}
-
-//takes two digits string, returns most likely year as a 4 digit string
-function yearConverter(twoDigitString){
-	let twoDigitNum = parseInt(twoDigitString.trim());
-	let fourDigitString;
-	if(twoDigitNum <= 50){
-		fourDigitString = "20" + twoDigitString;
-	}else{
-		fourDigitString = "19" + twoDigitString;
-	}
-	return fourDigitString;
-}
+module.exports = parser;
 
 //match array terms:
 //[1]-NORAD number, used as a unique ID for individual satellite or piece of space junk, 
@@ -156,7 +47,4 @@ function yearConverter(twoDigitString){
 //[15]-Argument of perigee in degrees--angle from ascending node to perigee, where orbit is closest to earth, measured inside orbit plane along the path of the orbit.
 //[16]-Mean Anomaly in degrees--basically think of it as what percentage of the current orbit is complete, only instead of 0-100, measured from 0-360 degrees.
 //[17]-Mean Motion in revolutions per day-- literally the number of orbits completed in a day
-//[18]-Revolution number at epoch--literally the number of full orbits complete since launch the epoch time described by [6] and [7]
-
-
-module.exports = parser;
+//[18]-Revolution number at epoch--literally the number of full orbits complete since launch the epoch time described by [6] and [7]s

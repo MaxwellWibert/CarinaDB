@@ -9,7 +9,7 @@ CREATE TABLE constellation(
     launchPiece VARCHAR(3) not null,
     bStar DECIMAL(11,10),
     inclination DECIMAL(11,10) not null,
-    rightAscencion DECIMAL(11,10) not null,
+    rightAscension DECIMAL(11,10) not null,
     argPerigee DECIMAL(11,10) not null,
     meanAnomaly DECIMAL(11,10) not null,
     meanMotion DECIMAL(13, 10) not null,

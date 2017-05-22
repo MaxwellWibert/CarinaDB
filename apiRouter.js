@@ -1,5 +1,7 @@
 var express = require("express");
 var mysql = require("mysql");
+var Satellite = require("./Satellite.js");
+var moment = require("moment");
 
 var app = express();
 
@@ -23,30 +25,17 @@ connection.connect(err=>{
 app.get("/all", (req, res) =>{
 	connection.query("SELECT * FROM constellation ORDER BY unixEpoch DESC", (err, result)=>{
 		if(err) console.log(err);
-		var html = "<h1> Satellites: </h1>";
+		
+		var satellites = result.map(satellite => {
+			let epoch = new moment(satellite.unixEpoch, "x");
 
-		html += "<ul>";
+			return new Satellite(satellite.noradNum, satellite.classifier,
+				satellite.launchYear, satellite.launchNum, satellite.launchPiece,
+				satellite.)
+		});
 
-		for (var i = 0; i< result.length; i++){
-			html+= `<li><p> NORAD ID: ${result[i].noradNum}</p>`;
-			html+= `<p> Classifier: ${result[i].classifier}</p>`;
-			html+= `<p> Launch Year: ${result[i].launchYear}</p>`;
-			html+= `<p> Launch Number: ${result[i].launchNum}</p>`;
-			html+= `<p> Launch Piece: ${result[i].launchPiece}</p>`;
-			html+= `<p> B* Drag Coefficient: ${result[i].bStar}</p>`;
-			html+= `<p> Inclination: ${result[i].inclination}</p>`;
-			html+= `<p> RAAN: ${result[i].rightAscencion}</p>`;
-			html+= `<p> Argument of Perigee: ${result[i].argPerigee}`;
-			html+= `<p> Mean Anomaly: ${result[i].meanAnomaly}</p>`;
-			html+= `<p> Mean Motion: ${result[i].meanMotion}</p>`;
-			html+= `<p> Mean Motion Prime: ${2*result[i].halfMeanMotionPrime}</p>`;
-			html+= `<p> Mean Motion Double Prime: ${6*result[i].sixthMeanMotionDoublePrime}</p>`;
-			html+= `<p> Epoch Unix Time (milliseconds): ${result[i].unixEpoch}</p></li>`;
-		}
 
-		html += "</ul>";
-
-		return res.send(html);
+		return res.json(satellites);
 
 	});
 });
